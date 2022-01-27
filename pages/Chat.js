@@ -1,19 +1,41 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzI5NDk3OSwiZXhwIjoxOTU4ODcwOTc5fQ.NC9V4Ouv4ucblm1y5kdVpHHNMt7P_fYv5-xwvDCpBRM';
+const SUPABASE_URL = 'https://yjxctssiwxvydjcmbitp.supabase.co';
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
     const [message, setMessage] = useState('');
 
     const [messageList, setMessageList] = useState([]);
 
+    useEffect(() => {
+        const dadosSupabase = supabaseClient
+            .from('Messages')
+            .select('*')
+            .order('id', { ascending: false })
+            .then(({ data }) => {
+                setMessageList(data);
+            });
+    }, []);
+
     function handleNewMessage(newMessage) {
         const message = {
             text: newMessage,
-            from: 'Matheus',
-            id: messageList.length + 1
+            from: 'Amazing512',
+            // id: messageList.length + 1
         }
-        setMessageList([message, ...messageList]);
+        supabaseClient
+            .from('Messages')
+            .insert([message])
+            .then(({ data }) => {
+                setMessageList([data[0], ...messageList]);
+            });
+        // setMessageList([message, ...messageList]);
         setMessage('');
     }
 
@@ -123,6 +145,7 @@ function Header() {
 }
 
 function MessageList(props) {
+
     console.log(props);
     return (
         <Box
@@ -164,7 +187,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/Amazing512.png`}
+                                src={`https://github.com/${message.from}.png`}
                             />
                             <Text tag="strong">
                                 {message.from}
