@@ -61,7 +61,7 @@ export default function PaginaInicial() {
                     as="form"
                     onSubmit={(infosDoEvento) => {
                         infosDoEvento.preventDefault();
-                        router.push('/Chat');
+                        router.push(`/Chat?username=${username}`);
                     }}
                     styleSheet={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',

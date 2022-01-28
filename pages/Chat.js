@@ -2,16 +2,30 @@ import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React, { useState, useEffect } from 'react';
 import appConfig from '../config.json';
 import { createClient } from '@supabase/supabase-js'
+import { useRouter } from 'next/router';
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker';
 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzI5NDk3OSwiZXhwIjoxOTU4ODcwOTc5fQ.NC9V4Ouv4ucblm1y5kdVpHHNMt7P_fYv5-xwvDCpBRM';
 const SUPABASE_URL = 'https://yjxctssiwxvydjcmbitp.supabase.co';
 
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function listenerNewMessageIRT(adicionaMensagem) {
+    return supabaseClient.from('Messages')
+        .on('INSERT', (resposta) => {
+            adicionaMensagem(resposta.new);
+        })
+        .subscribe();
+}
+
 export default function ChatPage() {
     const [message, setMessage] = useState('');
 
     const [messageList, setMessageList] = useState([]);
+
+    const router = useRouter();
+
+    const username = router.query.username;
 
     useEffect(() => {
         const dadosSupabase = supabaseClient
@@ -21,21 +35,32 @@ export default function ChatPage() {
             .then(({ data }) => {
                 setMessageList(data);
             });
+        const subscription = listenerNewMessageIRT((novaMensagem) => {
+            setMessageList((valorAtualDaLista) => {
+                return [
+                    novaMensagem,
+                    ...valorAtualDaLista,
+                ]
+            });
+        });
+        return () => {
+            subscription.unsubscribe();
+        }
     }, []);
+
+
 
     function handleNewMessage(newMessage) {
         const message = {
             text: newMessage,
-            from: 'Amazing512',
-            // id: messageList.length + 1
+            from: username,
         }
         supabaseClient
             .from('Messages')
             .insert([message])
             .then(({ data }) => {
-                setMessageList([data[0], ...messageList]);
+                //
             });
-        // setMessageList([message, ...messageList]);
         setMessage('');
     }
 
@@ -98,7 +123,6 @@ export default function ChatPage() {
                                     handleNewMessage(message)
                                 }
                             }}
-                            maxNumberOfLines={5}
                             placeholder="Insira sua mensagem aqui..."
                             type="textarea"
                             styleSheet={{
@@ -112,6 +136,9 @@ export default function ChatPage() {
                                 color: appConfig.theme.colors.highlight,
                             }}
                         />
+                        <ButtonSendSticker onStickerClick={(sticker) => {
+                            handleNewMessage(`:sticker: ${sticker}`);
+                        }} />
                     </Box>
                 </Box>
             </Box>
@@ -203,7 +230,11 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {message.text}
+                        {
+                            message.text.startsWith(':sticker:')
+                                ? <Image src={message.text.replace(':sticker:', '')} />
+                                : message.text
+                        }
                     </Text>
                 )
             })}
